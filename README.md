@@ -1,1 +1,1 @@
-# dongniao_discord
+# The discord bot for dongniao.net
