@@ -66,6 +66,9 @@ async def dongniao_api(message):
         return
     cat_list = await dongniao_box_list(result_id)
     if not cat_list:
+        em = discord.Embed(title="Can't find bird in this picture", description=message.author.mention)
+        em.set_image(url=url)
+        await message.channel.send(embed=em)
         return
     # if message.channel.type == discord.ChannelType.text:
     for item in cat_list:
