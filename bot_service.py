@@ -71,6 +71,12 @@ async def dongniao_api(message):
         await message.channel.send(embed=em)
         return
     # if message.channel.type == discord.ChannelType.text:
+    # return original picture if there is only one bird in the picture
+    if len(cat_list) == 1:
+        em = discord.Embed(title=f"{cat_list[0]['list'][0][1]}")
+        em.set_image(url=url)
+        await message.channel.send(embed=em)
+        return
     for item in cat_list:
         box, lst = item["box"], item["list"]
         em = discord.Embed(title=f"{lst[0][1]}", description=message.author.mention)
