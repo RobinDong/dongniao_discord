@@ -65,7 +65,14 @@ def draw_image(url, box):
 
 
 async def dongniao_api(message):
-    url = message.attachments[0].url
+    if message.attachments:
+        url = message.attachments[0].url
+    elif message.content[:5] == "http:" or message.content[:6] == "https:":
+        url = message.content
+    else:
+        url = None
+    if not url:
+        return
     result_id = dongniao_result_id(url)
     if not result_id:
         return
@@ -115,9 +122,6 @@ async def on_ready():
 @client.event
 async def on_message(message):
     if message.author == client.user:
-        return
-
-    if not message.attachments:
         return
 
     await dongniao_api(message)
