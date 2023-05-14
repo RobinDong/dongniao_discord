@@ -14,6 +14,7 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
+MAX_RETRIES = 20
 DONGNIAO_API_KEY = os.getenv("DONGNIAO_API_KEY")
 DONGNIAO_API_URL = "http://ca.dongniao.net/dongniao_2"
 NIAODIAN_URL = "http://dongniao.net/nd/"
@@ -38,7 +39,7 @@ async def dongniao_box_list(result_id):
     values = {"resultidv3": result_id, "api_key": DONGNIAO_API_KEY}
     retry = 0
     cat_list = None
-    while retry < 10:
+    while retry < MAX_RETRIES:
         await asyncio.sleep(2)
         resp = requests.post(DONGNIAO_API_URL, data=values)
         reply = resp.json()
@@ -51,7 +52,7 @@ async def dongniao_box_list(result_id):
     return cat_list
 
 
-def draw_image(url, box):
+def draw_image(url, boxes):
     # get image
     resp = requests.get(url, stream=True)
     if resp.status_code != 200:
@@ -59,7 +60,9 @@ def draw_image(url, box):
     buffer = BytesIO(resp.content)
     file_bytes = np.asarray(bytearray(buffer.read()), dtype=np.uint8)
     img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-    cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (10, 10, 255), 2)
+    for index, box in enumerate(boxes):
+        cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (10, 10, 255), 2)
+        cv2.putText(img, str(index+1), (box[0]+5, box[1]+55), cv2.FONT_HERSHEY_SIMPLEX, 2, (20,20,255), 4, 2)
     is_success, buffer = cv2.imencode(".jpg", img)
     return is_success, buffer
 
@@ -96,14 +99,20 @@ async def dongniao_api(message):
         em.set_thumbnail(url=f"{NIAODIAN_ICON_URL}{bird_id}")
         await message.channel.send(embed=em)
         return
-    for item in cat_list:
-        box, lst = item["box"], item["list"]
-        em = discord.Embed(title=f"{lst[0][1]}", description=message.author.mention)
-        is_success, buffer = draw_image(url, box)
-        if is_success:
-            file = discord.File(filename=f"{lst[0][1]}.jpg", fp=BytesIO(buffer))
-            em.set_image(url=f"attachment://{lst[0][1]}.jpg")
-            await message.channel.send(embed=em, file=file)
+    em = discord.Embed(description=message.author.mention)
+    boxes = [item["box"] for item in cat_list]
+    is_success, buffer = draw_image(url, boxes)
+    if not is_success:
+        print("Failed to draw image {url}")
+        return
+    file = discord.File(filename=f"bird.jpg", fp=BytesIO(buffer))
+    em.set_image(url=f"attachment://bird.jpg")
+    for index, item in enumerate(cat_list):
+        lst = item["list"]
+        bird_id = lst[0][2]
+        eng_name, zh_name, sci_name = bird_id_map[bird_id]
+        em.add_field(name=f"{index+1}. {eng_name}", value=f"{sci_name} [{zh_name}]({NIAODIAN_URL}{bird_id})")
+    await message.channel.send(embed=em, file=file)
     print("Done")
     # await message.channel.send(file=file)
 
