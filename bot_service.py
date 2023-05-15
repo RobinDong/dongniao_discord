@@ -67,6 +67,12 @@ def draw_image(url, boxes):
     return is_success, buffer
 
 
+async def send_not_found(message, url):
+    em = discord.Embed(title="Can't find bird in this picture", description=message.author.mention)
+    em.set_image(url=url)
+    await message.channel.send(embed=em)
+
+
 async def dongniao_api(message):
     if message.attachments:
         url = message.attachments[0].url
@@ -75,26 +81,27 @@ async def dongniao_api(message):
     else:
         url = None
     if not url:
+        await send_not_found(message, url)
         return
     result_id = dongniao_result_id(url)
     if not result_id:
+        await send_not_found(message, url)
         return
     cat_list = await dongniao_box_list(result_id)
     if not cat_list:
-        em = discord.Embed(title="Can't find bird in this picture", description=message.author.mention)
-        em.set_image(url=url)
-        await message.channel.send(embed=em)
+        await send_not_found(message, url)
         return
     # if message.channel.type == discord.ChannelType.text:
     # return original picture if there is only one bird in the picture
     if len(cat_list) == 1:
         bird_id = cat_list[0]['list'][0][2]
         if bird_id not in bird_id_map:
+            await send_not_found(message, url)
             return
         eng_name, zh_name, sci_name = bird_id_map[bird_id]
-        em = discord.Embed(title=eng_name)
-        em.add_field(name="", value=f"Scientific Name: {sci_name}")
-        em.add_field(name="", value=f"中文名: [{zh_name}]({NIAODIAN_URL}{bird_id})")
+        em = discord.Embed(title=eng_name, description=f"Scientific Name: {sci_name}\n中文名: [{zh_name}]({NIAODIAN_URL}{bird_id})")
+        # em.add_field(name="", value=f"Scientific Name: {sci_name}")
+        # em.add_field(name="", value=f"中文名: [{zh_name}]({NIAODIAN_URL}{bird_id})")
         em.set_image(url=url)
         em.set_thumbnail(url=f"{NIAODIAN_ICON_URL}{bird_id}")
         await message.channel.send(embed=em)
