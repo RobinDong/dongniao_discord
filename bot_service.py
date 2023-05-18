@@ -16,8 +16,8 @@ client = discord.Client(intents=intents)
 
 MAX_RETRIES = 20
 DONGNIAO_API_KEY = os.getenv("DONGNIAO_API_KEY")
-DONGNIAO_API_URL = "http://ca.dongniao.net/dongniao_2"
-NIAODIAN_URL = "http://dongniao.net/nd/"
+DONGNIAO_API_URL = "https://us.dongniao.net/dnapi"
+NIAODIAN_URL = "https://dongniao.net/nd/"
 NIAODIAN_ICON_URL = "https://ca.dongniao.net/niaodian?birdiconid="
 BIRD_ID_FILE = "final.121.new.txt"
 
@@ -81,7 +81,6 @@ async def dongniao_api(message):
     else:
         url = None
     if not url:
-        await send_not_found(message, url)
         return
     result_id = dongniao_result_id(url)
     if not result_id:
@@ -99,7 +98,7 @@ async def dongniao_api(message):
             await send_not_found(message, url)
             return
         eng_name, zh_name, sci_name = bird_id_map[bird_id]
-        em = discord.Embed(title=eng_name, description=f"Scientific Name: {sci_name}\n中文名: [{zh_name}]({NIAODIAN_URL}{bird_id})")
+        em = discord.Embed(title=eng_name, description=f"Scientific Name: [{sci_name}]({NIAODIAN_URL}{bird_id}/en)\n中文名: [{zh_name}]({NIAODIAN_URL}{bird_id})")
         # em.add_field(name="", value=f"Scientific Name: {sci_name}")
         # em.add_field(name="", value=f"中文名: [{zh_name}]({NIAODIAN_URL}{bird_id})")
         em.set_image(url=url)
@@ -118,7 +117,7 @@ async def dongniao_api(message):
         lst = item["list"]
         bird_id = lst[0][2]
         eng_name, zh_name, sci_name = bird_id_map[bird_id]
-        em.add_field(name=f"{index+1}. {eng_name}", value=f"{sci_name} [{zh_name}]({NIAODIAN_URL}{bird_id})")
+        em.add_field(name=f"{index+1}. {eng_name}", value=f"Scientific Name: [{sci_name}]({NIAODIAN_URL}{bird_id}/en)\n中文名: [{zh_name}]({NIAODIAN_URL}{bird_id})")
     await message.channel.send(embed=em, file=file)
     print("Done")
     # await message.channel.send(file=file)
