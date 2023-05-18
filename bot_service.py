@@ -20,6 +20,7 @@ DONGNIAO_API_URL = "https://us.dongniao.net/dnapi"
 NIAODIAN_URL = "https://dongniao.net/nd/"
 NIAODIAN_ICON_URL = "https://ca.dongniao.net/niaodian?birdiconid="
 BIRD_ID_FILE = "final.121.new.txt"
+CONF_THRESHOLD = 38
 
 bird_id_map = {}
 
@@ -68,9 +69,9 @@ def draw_image(url, boxes):
 
 
 async def send_not_found(message, url):
-    em = discord.Embed(title="Can't find bird in this picture", description=message.author.mention)
+    em = discord.Embed(title="Can't find bird in this picture")
     em.set_image(url=url)
-    await message.channel.send(embed=em)
+    await message.channel.send(embed=em, reference=message)
 
 
 async def dongniao_api(message):
@@ -103,9 +104,13 @@ async def dongniao_api(message):
         # em.add_field(name="", value=f"中文名: [{zh_name}]({NIAODIAN_URL}{bird_id})")
         em.set_image(url=url)
         em.set_thumbnail(url=f"{NIAODIAN_ICON_URL}{bird_id}")
-        await message.channel.send(embed=em)
+        await message.channel.send(embed=em, reference=message)
         return
-    em = discord.Embed(description=message.author.mention)
+
+    # drop box in cat_list that have confident smaller than threshold
+    cat_list = list(filter(lambda item: item["list"][0][0] > CONF_THRESHOLD, cat_list))
+
+    em = discord.Embed()
     boxes = [item["box"] for item in cat_list]
     is_success, buffer = draw_image(url, boxes)
     if not is_success:
@@ -118,7 +123,7 @@ async def dongniao_api(message):
         bird_id = lst[0][2]
         eng_name, zh_name, sci_name = bird_id_map[bird_id]
         em.add_field(name=f"{index+1}. {eng_name}", value=f"Scientific Name: [{sci_name}]({NIAODIAN_URL}{bird_id}/en)\n中文名: [{zh_name}]({NIAODIAN_URL}{bird_id})")
-    await message.channel.send(embed=em, file=file)
+    await message.channel.send(embed=em, file=file, reference=message)
     print("Done")
     # await message.channel.send(file=file)
 
