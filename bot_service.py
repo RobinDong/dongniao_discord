@@ -88,6 +88,9 @@ async def dongniao_api(message):
         await send_not_found(message, url)
         return
     cat_list = await dongniao_box_list(result_id)
+    if not cat_list:
+        await send_not_found(message, url)
+        return
     # drop boxes in cat_list that have confident smaller than threshold
     cat_list = list(filter(lambda item: item["list"][0][0] >= CONF_THRESHOLD, cat_list))
 
