@@ -20,7 +20,7 @@ DONGNIAO_API_URL = "https://us.dongniao.net/dnapi"
 NIAODIAN_URL = "https://dongniao.net/nd/"
 NIAODIAN_ICON_URL = "https://ca.dongniao.net/niaodian?birdiconid="
 BIRD_ID_FILE = "final.121.new.txt"
-CONF_THRESHOLD = 38
+CONF_THRESHOLD = 20
 
 bird_id_map = {}
 
@@ -62,8 +62,8 @@ def draw_image(url, boxes):
     file_bytes = np.asarray(bytearray(buffer.read()), dtype=np.uint8)
     img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     for index, box in enumerate(boxes):
-        cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (10, 10, 255), 2)
-        cv2.putText(img, str(index+1), (box[0]+5, box[1]+55), cv2.FONT_HERSHEY_SIMPLEX, 2, (20,20,255), 4, 2)
+        cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (255, 10, 10), 2)
+        cv2.putText(img, str(index+1), (box[0]+5, box[1]+55), cv2.FONT_HERSHEY_SIMPLEX, 2, (10, 10, 255), 4, 2)
     is_success, buffer = cv2.imencode(".jpg", img)
     return is_success, buffer
 
@@ -88,6 +88,9 @@ async def dongniao_api(message):
         await send_not_found(message, url)
         return
     cat_list = await dongniao_box_list(result_id)
+    # drop boxes in cat_list that have confident smaller than threshold
+    cat_list = list(filter(lambda item: item["list"][0][0] >= CONF_THRESHOLD, cat_list))
+
     if not cat_list:
         await send_not_found(message, url)
         return
@@ -106,9 +109,6 @@ async def dongniao_api(message):
         em.set_thumbnail(url=f"{NIAODIAN_ICON_URL}{bird_id}")
         await message.channel.send(embed=em, reference=message)
         return
-
-    # drop box in cat_list that have confident smaller than threshold
-    cat_list = list(filter(lambda item: item["list"][0][0] > CONF_THRESHOLD, cat_list))
 
     em = discord.Embed()
     boxes = [item["box"] for item in cat_list]
